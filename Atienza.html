@@ -342,7 +342,6 @@
     </footer>
 
     <script>
-      // Using querySelectorAll dynamically binds to all items, including the new additions!
       function updateTotals() {
         const checks = document.querySelectorAll(".item-check");
         const qtys = document.querySelectorAll(".item-qty");
@@ -373,7 +372,6 @@
         totalDisplay.innerText = `Total: ₱${grandTotal.toFixed(2)}`;
       }
 
-      // Event delegation or re-querying ensures the script reads the entire DOM list properly
       document.getElementById("menu-items").addEventListener("change", updateTotals);
       document.getElementById("menu-items").addEventListener("input", updateTotals);
 
