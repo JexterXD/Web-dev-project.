@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heihachi's Resto | Home</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --pinoy-orange: #ff6600;
+      }
+      .hero-section {
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+          url("https://ssb.wiki.gallery/images/thumb/a/ab/SSBU-Mishima_Dojo.png/1200px-SSBU-Mishima_Dojo.png");
+        background-size: cover;
+        height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 40px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+      <div class="container">
+        <a class="navbar-brand fw-bold text-warning" href="#">Heihachi's Resto</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="#">Home</a>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="#menu">Menu</a></li>
+            <li class="nav-item">
+              <a class="nav-link" href="#calculator">Order Calculator</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <header class="hero-section text-center">
+      <div>
+        <h1 class="display-3 fw-bold">Electrifying Foods straight from his dojo</h1>
+        <p class="lead">
+          Freshly cooked dishes to win your tournaments.
+        </p>
+        <a href="#calculator" class="btn btn-warning btn-lg">Order Now</a>
+      </div>
+    </header>
+
+    <section class="container my-5">
+      <h2 class="text-center mb-4">Today's Specials</h2>
+      <div
+        id="foodCarousel"
+        class="carousel slide shadow"
+        data-bs-ride="carousel"
+      >
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="bg-secondary text-white p-5 text-center">
+              <h3>Devil Jin-igang na Baboy - ₱80</h3>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="bg-danger text-white p-5 text-center">
+              <h3>Mishima Hellfire Sisig - ₱70</h3>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="bg-success text-white p-5 text-center">
+              <h3>Paul Phoenix "No Kazuya" Dinuguan - ₱80</h3>
+            </div>
+          </div>
+        </div>
+        <button
+          class="carousel-control-prev"
+          type="button"
+          data-bs-target="#foodCarousel"
+          data-bs-slide="prev"
+        >
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button
+          class="carousel-control-next"
+          type="button"
+          data-bs-target="#foodCarousel"
+          data-bs-slide="next"
+        >
+          <span class="carousel-control-next-icon"></span>
+        </button>
+      </div>
+    </section>
+
+    <section id="calculator" class="container my-5">
+      <div class="row">
+        <div class="col-md-7">
+          <h3 class="mb-3">Full Menu</h3>
+          <div class="table-responsive">
+            <table class="table table-striped align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>Select</th>
+                  <th>Dish Name</th>
+                  <th>Price</th>
+                  <th>Qty</th>
+                </tr>
+              </thead>
+              <tbody id="menu-items">
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="80"
+                      data-name="Kare-Kare"
+                    />
+                  </td>
+                  <td>Mishima Hellfire Sisig</td>
+                  <td>₱80.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="70"
+                      data-name="Sinigang na Baboy"
+                    />
+                  </td>
+                  <td>Devil Jin-igang na Baboy</td>
+                  <td>₱70.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="80"
+                      data-name="Sinabawang Fried Chicken"
+                    />
+                  </td>
+                  <td>Paul Phoenix "No Kazuya" Dinuguan</td>
+                  <td>₱80.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="75"
+                      data-name="Chicken Pork Adobo"
+                    />
+                  </td>
+                  <td>King’s Giant Swing Caldereta</td>
+                  <td>₱75.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="90"
+                      data-name="Lechon Kawali"
+                    />
+                  </td>
+                  <td>Yoshimitsu Flea-tters (Ukoy)</td>
+                  <td>₱90.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input item-check"
+                      data-price="50"
+                      data-name="Special Halo-Halo"
+                    />
+                  </td>
+                  <td>Alisa Bosconovitch Halo-Halo (with Exploding Ube)</td>
+                  <td>₱50.00</td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm item-qty"
+                      value="1"
+                      min="1"
+                      style="width: 70px"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="col-md-5">
+          <div class="card border-primary shadow">
+            <div class="card-body">
+              <h4 class="card-title text-center">Total Cost Calculator</h4>
+              <hr />
+              <div id="order-summary" class="mb-3">
+                <p class="text-muted">No items selected.</p>
+              </div>
+              <h3 class="text-end text-primary" id="grand-total">
+                Total: ₱0.00
+              </h3>
+              <button
+                class="btn btn-primary w-100 mt-3"
+                data-bs-toggle="modal"
+                data-bs-target="#checkoutModal"
+              >
+                Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="modal fade" id="checkoutModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Customer Details</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="checkoutForm">
+              <div class="mb-3">
+                <label class="form-label">Full Name</label> 
+                <input
+                  type="text"
+                  id="custName"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Delivery Address</label>
+                <textarea
+                  id="custAddr"
+                  class="form-control"
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" class="btn btn-success w-100">
+                Place Order
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bg-dark text-white mt-5">
+      <div class="container footer-grid">
+        <div>
+          <h5>About Us</h5>
+          <p>Serving the best home-cooked meals since 2000.</p>
+        </div>
+        <div>
+          <h5>Quick Links</h5>
+          <ul class="list-unstyled">
+            <li><a href="#" class="text-warning">Privacy Policy</a></li>
+            <li><a href="#" class="text-warning">Terms of Service</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Contact</h5>
+          <p>
+            📍 Mishima St., New York City<br />📞 0920-6982-6767
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Using querySelectorAll dynamically binds to all items, including the new additions!
+      function updateTotals() {
+        const checks = document.querySelectorAll(".item-check");
+        const qtys = document.querySelectorAll(".item-qty");
+        const totalDisplay = document.getElementById("grand-total");
+        const summaryDisplay = document.getElementById("order-summary");
+        
+        let grandTotal = 0;
+        let summaryHtml = '<ul class="list-group list-group-flush">';
+        let hasItems = false;
+
+        checks.forEach((check, index) => {
+          if (check.checked) {
+            hasItems = true;
+            const price = parseFloat(check.dataset.price);
+            const qty = parseInt(qtys[index].value);
+            const subtotal = price * qty;
+            grandTotal += subtotal;
+            summaryHtml += `<li class="list-group-item d-flex justify-content-between">
+                        ${check.dataset.name} (x${qty}) <span>₱${subtotal.toFixed(2)}</span>
+                    </li>`;
+          }
+        });
+
+        summaryHtml += "</ul>";
+        summaryDisplay.innerHTML = hasItems
+          ? summaryHtml
+          : '<p class="text-muted">No items selected.</p>';
+        totalDisplay.innerText = `Total: ₱${grandTotal.toFixed(2)}`;
+      }
+
+      // Event delegation or re-querying ensures the script reads the entire DOM list properly
+      document.getElementById("menu-items").addEventListener("change", updateTotals);
+      document.getElementById("menu-items").addEventListener("input", updateTotals);
+
+      document
+        .getElementById("checkoutForm")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          const name = document.getElementById("custName").value;
+          if (name.length < 3) {
+            alert("Please Enter your Name.");
+          } else {
+            alert(
+              `Salamat ng marami, ${name}! Your order has been placed. Sana'y makita ka namin muli!`,
+            );
+            location.reload();
+          }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
