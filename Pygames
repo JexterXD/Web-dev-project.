@@ -1,0 +1,575 @@
+import pygame
+import random
+import math
+import sys
+import time
+
+
+# INITIALIZATION & SHARED CONSTANTS
+pygame.init()
+pygame.mixer.init()
+
+# Shared Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+GRAY = (40, 40, 40)
+LIGHT_GRAY = (200, 200, 200)
+
+# Global Screen Surface
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Ultimate Arcade Collection")
+
+def draw_centered_text(text, font, color, surface, x, y):
+    """Utility to quickly draw text on screen centered."""
+    text_obj = font.render(text, True, color)
+    text_rect = text_obj.get_rect()
+    text_rect.center = (x, y)
+    surface.blit(text_obj, text_rect)
+
+
+# GAME 1: HOOK & DODGE
+G1_WIDTH = 800
+G1_HEIGHT = 600
+WATER_BLUE = (30, 144, 255)
+DEEP_BLUE = (10, 50, 100)
+SANDY_GOLD = (238, 214, 175)
+DARK_GRAY = (50, 50, 50)
+
+# Attempt to load sound effects (graceful fallback)
+try:
+    pygame.mixer.music.load("assets/background.mp3")
+    catch_sound = pygame.mixer.Sound("assets/catch.wav")
+    gameover_sound = pygame.mixer.Sound("assets/gameover.wav")
+except:
+    catch_sound = None
+    gameover_sound = None
+
+
+class BoatPlayer(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((90, 40), pygame.SRCALPHA)
+        pygame.draw.polygon(self.image, DARK_GRAY, [(0, 0), (90, 0), (75, 40), (15, 40)])
+        pygame.draw.rect(self.image, RED, (35, -10, 5, 20)) 
+        self.rect = self.image.get_rect()
+        self.rect.centerx = G1_WIDTH // 2
+        self.rect.top = 40
+        self.speed = 6
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            self.rect.x -= self.speed
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            self.rect.x += self.speed
+
+        if self.rect.left < 0: self.rect.left = 0
+        if self.rect.right > G1_WIDTH: self.rect.right = G1_WIDTH
+
+class FishingHook(pygame.sprite.Sprite):
+    def __init__(self, player):
+        super().__init__()
+        self.player = player
+        self.image = pygame.Surface((15, 20), pygame.SRCALPHA)
+        pygame.draw.arc(self.image, WHITE, (0, 0, 15, 18), 3.14, 0, 3)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = self.player.rect.centerx
+        self.rect.top = self.player.rect.bottom
+        self.speed = 5
+        self.state = "SURFACE" 
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if self.state == "SURFACE":
+            self.rect.centerx = self.player.rect.centerx
+            self.rect.top = self.player.rect.bottom
+            if keys[pygame.K_SPACE] or keys[pygame.K_DOWN]:
+                self.state = "DROPPING"
+        elif self.state == "DROPPING":
+            self.rect.y += self.speed
+            if self.rect.bottom >= G1_HEIGHT - 40:
+                self.state = "RETRACTING"
+        elif self.state == "RETRACTING":
+            self.rect.y -= self.speed
+            if self.rect.top <= self.player.rect.bottom:
+                self.rect.top = self.player.rect.bottom
+                self.state = "SURFACE"
+
+class Fish(pygame.sprite.Sprite):
+    def __init__(self, speed_multiplier=1.0):
+        super().__init__()
+        self.image = pygame.Surface((40, 25), pygame.SRCALPHA)
+        self.color = random.choice([YELLOW, (255, 165, 0), (255, 105, 180)])
+        pygame.draw.ellipse(self.image, self.color, (0, 0, 30, 25))
+        pygame.draw.polygon(self.image, self.color, [(30, 12), (40, 2), (40, 22)]) 
+        
+        self.rect = self.image.get_rect()
+        self.direction = random.choice([-1, 1])
+        if self.direction == 1:
+            self.rect.x = -40
+            self.image = pygame.transform.flip(self.image, True, False)
+        else:
+            self.rect.x = G1_WIDTH + 40
+        self.rect.y = random.randint(150, G1_HEIGHT - 100)
+        self.speed = random.randint(2, 5) * speed_multiplier
+
+    def update(self):
+        self.rect.x += self.speed * self.direction
+        if self.rect.right < -50 or self.rect.left > G1_WIDTH + 50:
+            self.kill()
+
+class SharkEnemy(pygame.sprite.Sprite):
+    def __init__(self, speed_multiplier=1.0):
+        super().__init__()
+        self.image = pygame.Surface((70, 40), pygame.SRCALPHA)
+        pygame.draw.ellipse(self.image, (128, 138, 145), (10, 10, 50, 25))
+        pygame.draw.polygon(self.image, (128, 138, 145), [(50, 22), (70, 10), (70, 35)])
+        pygame.draw.polygon(self.image, (100, 110, 120), [(30, 10), (40, 0), (45, 10)])
+        
+        self.rect = self.image.get_rect()
+        self.direction = random.choice([-1, 1])
+        if self.direction == 1:
+            self.rect.x = -80
+            self.image = pygame.transform.flip(self.image, True, False)
+        else:
+            self.rect.x = G1_WIDTH + 80
+        self.rect.y = random.randint(200, G1_HEIGHT - 120)
+        self.speed = random.randint(3, 6) * speed_multiplier
+
+    def update(self):
+        self.rect.x += self.speed * self.direction
+        if self.rect.right < -90 or self.rect.left > G1_WIDTH + 90:
+            self.kill()
+
+class HookAndDodgeGame:
+    def __init__(self):
+        global screen
+        screen = pygame.display.set_mode((G1_WIDTH, G1_HEIGHT))
+        pygame.display.set_caption("Hook & Dodge: The Ultimate Fishing Game")
+        self.clock = pygame.time.Clock()
+        self.font_large = pygame.font.SysFont("comicsansms", 50)
+        self.font_medium = pygame.font.SysFont("comicsansms", 30)
+        self.font_small = pygame.font.SysFont("comicsansms", 20)
+        self.state = "MENU"
+        self.running = True
+
+    def draw_button(self, text, font, x, y, w, h, inactive_color, active_color, action=None):
+        mouse = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()
+        if x + w > mouse[0] > x and y + h > mouse[1] > y:
+            pygame.draw.rect(screen, active_color, (x, y, w, h), border_radius=10)
+            if click[0] == 1 and action is not None:
+                action()
+        else:
+            pygame.draw.rect(screen, inactive_color, (x, y, w, h), border_radius=10)
+        draw_centered_text(text, font, WHITE, screen, x + (w / 2), y + (h / 2))
+
+    def exit_to_main(self):
+        self.running = False
+
+    def start_game(self):
+        self.score, self.target_score, self.speed_multiplier = 0, 15, 1.0
+        self.all_sprites = pygame.sprite.Group()
+        self.fish_group = pygame.sprite.Group()
+        self.enemy_group = pygame.sprite.Group()
+        self.player = BoatPlayer()
+        self.hook = FishingHook(self.player)
+        self.all_sprites.add(self.player, self.hook)
+        self.fish_timer = 0
+        self.enemy_timer = 0
+        self.state = "PLAYING"
+
+    def run(self):
+        if catch_sound:
+            pygame.mixer.music.play(-1)
+        
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+            if self.state == "MENU":
+                screen.fill(DEEP_BLUE)
+                pygame.draw.rect(screen, WATER_BLUE, (0, 200, G1_WIDTH, G1_HEIGHT))
+                draw_centered_text("HOOK & DODGE", self.font_large, YELLOW, screen, G1_WIDTH // 2, 120)
+                draw_centered_text("Catch fish, avoid the sharks!", self.font_small, WHITE, screen, G1_WIDTH // 2, 180)
+                self.draw_button("PLAY", self.font_medium, 300, 280, 200, 50, DARK_GRAY, RED, self.start_game)
+                self.draw_button("MAIN MENU", self.font_medium, 300, 360, 200, 50, DARK_GRAY, RED, self.exit_to_main)
+                pygame.display.update()
+
+            elif self.state == "PLAYING":
+                self.fish_timer += 1
+                self.enemy_timer += 1
+                self.speed_multiplier = 1.0 + (self.score * 0.05)
+
+                if self.fish_timer > 45:
+                    fish = Fish(self.speed_multiplier)
+                    self.all_sprites.add(fish)
+                    self.fish_group.add(fish)
+                    self.fish_timer = 0
+
+                if self.enemy_timer > 80:
+                    enemy = SharkEnemy(self.speed_multiplier)
+                    self.all_sprites.add(enemy)
+                    self.enemy_group.add(enemy)
+                    self.enemy_timer = 0
+
+                self.all_sprites.update()
+                
+                # Collisions
+                fish_caught = pygame.sprite.spritecollide(self.hook, self.fish_group, True)
+                for _ in fish_caught:
+                    self.score += 1
+                    if catch_sound: catch_sound.play()
+                    self.hook.state = "RETRACTING"
+
+                if pygame.sprite.spritecollide(self.hook, self.enemy_group, False) or \
+                   pygame.sprite.spritecollide(self.player, self.enemy_group, False):
+                    if gameover_sound: gameover_sound.play()
+                    self.state = "GAME_OVER"
+
+                if self.score >= self.target_score:
+                    self.state = "GAME_WON"
+
+                # Drawing
+                screen.fill(WHITE) 
+                pygame.draw.rect(screen, WATER_BLUE, (0, 80, G1_WIDTH, G1_HEIGHT))
+                pygame.draw.rect(screen, SANDY_GOLD, (0, G1_HEIGHT - 20, G1_WIDTH, 20))
+                pygame.draw.line(screen, WHITE, (self.player.rect.centerx + 1, self.player.rect.bottom), self.hook.rect.center, 2)
+                self.all_sprites.draw(screen)
+
+                draw_centered_text(f"Score: {self.score} / {self.target_score}", self.font_medium, WHITE, screen, 110, 30)
+                draw_centered_text("Controls: A/D or Left/Right. Space/Down to Drop.", self.font_small, DARK_GRAY, screen, G1_WIDTH - 250, 30)
+                pygame.display.update()
+
+            elif self.state == "GAME_OVER":
+                screen.fill(DARK_GRAY)
+                draw_centered_text("GAME OVER!", self.font_large, RED, screen, G1_WIDTH // 2, 200)
+                draw_centered_text(f"You were caught by a shark! Final Score: {self.score}", self.font_small, WHITE, screen, G1_WIDTH // 2, 280)
+                self.draw_button("RESTART", self.font_medium, 300, 360, 200, 50, WATER_BLUE, DEEP_BLUE, self.start_game)
+                self.draw_button("MAIN MENU", self.font_medium, 300, 440, 200, 50, WATER_BLUE, DEEP_BLUE, self.exit_to_main)
+                pygame.display.update()
+
+            elif self.state == "GAME_WON":
+                screen.fill(DEEP_BLUE)
+                draw_centered_text("VICTORY!", self.font_large, YELLOW, screen, G1_WIDTH // 2, 200)
+                draw_centered_text(f"Master Angler! You successfully caught {self.score} fish!", self.font_small, WHITE, screen, G1_WIDTH // 2, 280)
+                self.draw_button("PLAY AGAIN", self.font_medium, 300, 360, 200, 50, WATER_BLUE, RED, self.start_game)
+                self.draw_button("MAIN MENU", self.font_medium, 300, 440, 200, 50, WATER_BLUE, RED, self.exit_to_main)
+                pygame.display.update()
+
+            self.clock.tick(60)
+            
+        if catch_sound:
+            pygame.mixer.music.stop()
+
+# GAME 2: SIMON SAYS
+class SimonSaysGame:
+    def __init__(self):
+        global screen
+        self.width, self.height = 700, 700
+        screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption("Simon Says")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("consolas", 30)
+        self.big_font = pygame.font.SysFont("consolas", 70)
+        
+        self.DARK_RED, self.DARK_GREEN, self.DARK_BLUE, self.DARK_YELLOW = (120, 0, 0), (0, 120, 0), (0, 0, 120), (120, 120, 0)
+        self.buttons = {
+            "R": pygame.Rect(50, 50, 280, 280),
+            "G": pygame.Rect(370, 50, 280, 280),
+            "B": pygame.Rect(50, 370, 280, 280),
+            "Y": pygame.Rect(370, 370, 280, 280)
+        }
+        self.WIN_LEVEL = 10
+        self.high_score = 0
+        self.reset_game()
+
+    def reset_game(self):
+        self.sequence = [random.choice(["R", "G", "B", "Y"])]
+        self.player_sequence = []
+        self.level = 1
+        self.score = 0
+        self.game_over = False
+        self.game_won = False
+
+    def draw_buttons(self, active=None):
+        screen.fill(GRAY)
+        pygame.draw.rect(screen, RED if active == "R" else self.DARK_RED, self.buttons["R"], border_radius=20)
+        pygame.draw.rect(screen, GREEN if active == "G" else self.DARK_GREEN, self.buttons["G"], border_radius=20)
+        pygame.draw.rect(screen, BLUE if active == "B" else self.DARK_BLUE, self.buttons["B"], border_radius=20)
+        pygame.draw.rect(screen, YELLOW if active == "Y" else self.DARK_YELLOW, self.buttons["Y"], border_radius=20)
+
+        screen.blit(self.font.render(f"Level: {self.level}", True, WHITE), (20, 10))
+        screen.blit(self.font.render(f"Score: {self.score}", True, WHITE), (20, 50))
+        screen.blit(self.font.render(f"High Score: {self.high_score}", True, WHITE), (430, 10))
+        pygame.display.update()
+
+    def flash_button(self, color):
+        self.draw_buttons(color)
+        pygame.time.delay(450)
+        self.draw_buttons()
+        pygame.time.delay(200)
+
+    def run(self):
+        running = True
+        while running:
+            self.clock.tick(60)
+
+            if not self.game_over and not self.game_won:
+                self.draw_buttons()
+                pygame.time.delay(800)
+                for color in self.sequence:
+                    self.flash_button(color)
+
+                self.player_sequence = []
+                waiting_for_input = True
+
+                while waiting_for_input:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            return 
+
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            clicked = None
+                            for key, rect in self.buttons.items():
+                                if rect.collidepoint(event.pos):
+                                    clicked = key
+                                    break
+
+                            if clicked:
+                                self.flash_button(clicked)
+                                self.player_sequence.append(clicked)
+                                index = len(self.player_sequence) - 1
+
+                                if self.player_sequence[index] != self.sequence[index]:
+                                    self.game_over = True
+                                    if self.score > self.high_score: self.high_score = self.score
+                                    waiting_for_input = False
+
+                                elif len(self.player_sequence) == len(self.sequence):
+                                    self.score += 10
+                                    self.level += 1
+                                    if self.level > self.WIN_LEVEL:
+                                        self.game_won = True
+                                        if self.score > self.high_score: self.high_score = self.score
+                                    else:
+                                        self.sequence.append(random.choice(["R", "G", "B", "Y"]))
+                                    waiting_for_input = False
+
+            elif self.game_over:
+                screen.fill(BLACK)
+                draw_centered_text("GAME OVER", self.big_font, RED, screen, self.width // 2, self.height // 2 - 80)
+                draw_centered_text(f"Final Score: {self.score}", self.font, WHITE, screen, self.width // 2, self.height // 2)
+                draw_centered_text("Press R to Restart, ESC for Menu", self.font, WHITE, screen, self.width // 2, self.height // 2 + 60)
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT: return
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r: self.reset_game()
+                        if event.key == pygame.K_ESCAPE: return
+
+            elif self.game_won:
+                screen.fill(BLACK)
+                draw_centered_text("YOU WIN!", self.big_font, GREEN, screen, self.width // 2, self.height // 2 - 80)
+                draw_centered_text(f"Final Score: {self.score}", self.font, WHITE, screen, self.width // 2, self.height // 2)
+                draw_centered_text("Press R to Play Again, ESC for Menu", self.font, WHITE, screen, self.width // 2, self.height // 2 + 60)
+                pygame.display.update()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT: return
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r: self.reset_game()
+                        if event.key == pygame.K_ESCAPE: return
+
+# GAME 3: SNAKE
+G3_WIDTH, G3_HEIGHT = 700, 700
+SEGMENT_SIZE = 20
+START_LENGTH = 12
+FOOD_SIZE = 10
+WALL_THICKNESS = 15
+
+class Snake:
+    def __init__(self):
+        self.positions = []
+        x, y = G3_WIDTH // 2, G3_HEIGHT // 2
+        for i in range(START_LENGTH):
+            self.positions.append([x - i * SEGMENT_SIZE, y])
+        self.dx, self.dy = 3, 0
+        self.grow = False
+
+    def move(self):
+        head_x = self.positions[0][0] + self.dx
+        head_y = self.positions[0][1] + self.dy
+        self.positions.insert(0, [head_x, head_y])
+        if not self.grow: self.positions.pop()
+        else: self.grow = False
+
+    def draw(self):
+        for pos in self.positions:
+            pygame.draw.rect(screen, GREEN, (pos[0], pos[1], SEGMENT_SIZE, SEGMENT_SIZE), border_radius=6)
+
+    def change_direction(self, dx, dy):
+        if self.dx != -dx or self.dy != -dy:
+            self.dx, self.dy = dx, dy
+
+class Food:
+    def __init__(self):
+        self.spawn()
+
+    def spawn(self):
+        padding = 50
+        self.x = random.randint(padding, G3_WIDTH - padding)
+        self.y = random.randint(padding, G3_HEIGHT - padding)
+
+    def draw(self):
+        pygame.draw.circle(screen, LIGHT_GRAY, (int(self.x), int(self.y)), FOOD_SIZE)
+
+class SmoothSnakeGame:
+    def __init__(self):
+        global screen
+        screen = pygame.display.set_mode((G3_WIDTH, G3_HEIGHT))
+        pygame.display.set_caption("Smooth Snake")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("consolas", 20)
+        self.big_font = pygame.font.SysFont("consolas", 70)
+        self.BG_COLOR = (37, 150, 190)
+        self.WALL_COLOR = (100, 100, 100)
+        self.high_score = 0
+        self.reset_game()
+
+    def reset_game(self):
+        self.snake = Snake()
+        self.food = Food()
+        self.score = 0
+        self.balls_collected = 0
+        self.current_speed = 3
+        self.game_over = False
+
+    def draw_walls(self):
+        pygame.draw.rect(screen, self.WALL_COLOR, (0, 0, G3_WIDTH, WALL_THICKNESS))
+        pygame.draw.rect(screen, self.WALL_COLOR, (0, G3_HEIGHT - WALL_THICKNESS, G3_WIDTH, WALL_THICKNESS))
+        pygame.draw.rect(screen, self.WALL_COLOR, (0, 0, WALL_THICKNESS, G3_HEIGHT))
+        pygame.draw.rect(screen, self.WALL_COLOR, (G3_WIDTH - WALL_THICKNESS, 0, WALL_THICKNESS, G3_HEIGHT))
+
+    def run(self):
+        running = True
+        while running:
+            self.clock.tick(min(self.current_speed * 15, 120))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+
+                if event.type == pygame.KEYDOWN:
+                    if not self.game_over:
+                        if event.key == pygame.K_LEFT: self.snake.change_direction(-3, 0)
+                        elif event.key == pygame.K_RIGHT: self.snake.change_direction(3, 0)
+                        elif event.key == pygame.K_UP: self.snake.change_direction(0, -3)
+                        elif event.key == pygame.K_DOWN: self.snake.change_direction(0, 3)
+                        elif event.key == pygame.K_ESCAPE: return
+                    else:
+                        if event.key == pygame.K_r: self.reset_game()
+                        if event.key == pygame.K_ESCAPE: return
+
+            if not self.game_over:
+                self.snake.move()
+                # Food 
+                hx, hy = self.snake.positions[0]
+                if math.hypot(hx - self.food.x, hy - self.food.y) < FOOD_SIZE + SEGMENT_SIZE / 2:
+                    self.score += 10
+                    self.balls_collected += 1
+                    self.snake.grow = True
+                    self.food.spawn()
+                    self.current_speed += 0.15
+                    if self.score > self.high_score: self.high_score = self.score
+
+                # Wall 
+                if hx < WALL_THICKNESS or hx + SEGMENT_SIZE > G3_WIDTH - WALL_THICKNESS or \
+                   hy < WALL_THICKNESS or hy + SEGMENT_SIZE > G3_HEIGHT - WALL_THICKNESS:
+                    self.game_over = True
+
+                # Self Collision
+                for segment in self.snake.positions[8:]:
+                    if math.hypot(hx - segment[0], hy - segment[1]) < SEGMENT_SIZE / 1.5:
+                        self.game_over = True
+
+            screen.fill(self.BG_COLOR)
+            self.food.draw()
+            self.snake.draw()
+            self.draw_walls()
+
+            if self.game_over:
+                draw_centered_text("GAME OVER", self.big_font, RED, screen, G3_WIDTH // 2, G3_HEIGHT // 2 - 60)
+                draw_centered_text(f"Final Score: {self.score} pts | Balls: {self.balls_collected}", self.font, WHITE, screen, G3_WIDTH // 2, G3_HEIGHT // 2 + 10)
+                if self.score >= self.high_score and self.score > 0:
+                    draw_centered_text("NEW HIGH SCORE!", self.font, YELLOW, screen, G3_WIDTH // 2, G3_HEIGHT // 2 + 45)
+                draw_centered_text("Press R to Restart, ESC for Menu", self.font, LIGHT_GRAY, screen, G3_WIDTH // 2, G3_HEIGHT // 2 + 85)
+
+            pygame.display.update()
+
+
+# MAIN MENU
+def draw_menu_button(text, font, x, y, w, h, default_col, hover_col):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    clicked = False
+
+    if x + w > mouse[0] > x and y + h > mouse[1] > y:
+        pygame.draw.rect(screen, hover_col, (x, y, w, h), border_radius=10)
+        if click[0] == 1:
+            clicked = True
+            pygame.time.delay(200) # Simple debounce
+    else:
+        pygame.draw.rect(screen, default_col, (x, y, w, h), border_radius=10)
+        
+    draw_centered_text(text, font, WHITE, screen, x + (w / 2), y + (h / 2))
+    return clicked
+
+def main_menu():
+    global screen
+    clock = pygame.time.Clock()
+    font_large = pygame.font.SysFont("comicsansms", 50)
+    font_medium = pygame.font.SysFont("comicsansms", 30)
+    
+    running = True
+    while running:
+        # Loop to Main Menu
+        screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Ultimate Arcade Collection")
+        screen.fill((20, 25, 35))
+
+        draw_centered_text("MAIN MENU", font_large, YELLOW, screen, 400, 100)
+        draw_centered_text("Choose a game to play", font_medium, LIGHT_GRAY, screen, 400, 160)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        # Draw Buttons & Handle Clicks
+        if draw_menu_button("Fishing Game", font_medium, 250, 240, 300, 50, GRAY, BLUE):
+            HookAndDodgeGame().run()
+        
+        if draw_menu_button("Simon Says", font_medium, 250, 310, 300, 50, GRAY, GREEN):
+            SimonSaysGame().run()
+
+        if draw_menu_button("Smooth Snake", font_medium, 250, 380, 300, 50, GRAY, RED):
+            SmoothSnakeGame().run()
+
+        if draw_menu_button("EXIT ARCADE", font_medium, 250, 480, 300, 50, (100, 30, 30), (180, 50, 50)):
+            running = False
+
+        pygame.display.update()
+        clock.tick(60)
+
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main_menu()
